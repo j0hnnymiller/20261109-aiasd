@@ -24,6 +24,11 @@ revisions:
     date: "2026-11-12"
     change: "Restructure the local issue draft to follow GitHub issue authoring guidance and add verified evidence."
     ai_log: "../ai-logs/2026/11/12/issues-conformance-20261112/conversation.md"
+  - chat_id: "version-task-schema-upgrades-20261112"
+    model: "Anthropic/claude@unknown"
+    date: "2026-11-12"
+    change: "Mark acceptance criteria complete and link the implementation."
+    ai_log: "../ai-logs/2026/11/12/version-task-schema-upgrades-20261112/conversation.md"
 ---
 
 # Ensure task schema upgrades are versioned and preserve existing data
@@ -60,13 +65,19 @@ upgrade safely without losing task data or reapplying completed migrations.
 
 ## Acceptance criteria
 
-- [ ] The task schema has an explicit version and ordered upgrade path.
-- [ ] Fresh databases initialize to the current schema.
-- [ ] Supported existing databases, including legacy schemas, upgrade without
+- [x] The task schema has an explicit version and ordered upgrade path.
+- [x] Fresh databases initialize to the current schema.
+- [x] Supported existing databases, including legacy schemas, upgrade without
   data loss.
-- [ ] Re-running initialization is safe and does not reapply completed upgrades.
-- [ ] Tests cover each supported starting schema, resulting schema, and retained
+- [x] Re-running initialization is safe and does not reapply completed upgrades.
+- [x] Tests cover each supported starting schema, resulting schema, and retained
   data.
+
+## Resolution
+
+Implemented in [TaskDatabase.cs](../src/TodoManager/TaskDatabase.cs) using
+`PRAGMA user_version` and ordered upgrades, verified by
+[TaskDatabaseTests.cs](../tests/TodoManager.Tests/TaskDatabaseTests.cs).
 
 ## Evidence
 

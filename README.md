@@ -75,6 +75,11 @@ revisions:
     date: "2026-11-12"
     change: "Link the local issue index for refactoring and instruction-audit findings."
     ai_log: "ai-logs/2026/11/12/refactoring-finding-issues-20261112/conversation.md"
+  - chat_id: "version-task-schema-upgrades-20261112"
+    model: "Anthropic/claude@unknown"
+    date: "2026-11-12"
+    change: "Document versioned task-schema upgrades and their test coverage (GitHub issue #10)."
+    ai_log: "ai-logs/2026/11/12/version-task-schema-upgrades-20261112/conversation.md"
 ---
 
 # Daybook
@@ -203,6 +208,13 @@ Existing databases are automatically upgraded on startup to add recurrence and
 successor-tracking fields; existing task data is retained and old tasks default
 to no recurrence.
 
+The task schema version is stored in SQLite's `PRAGMA user_version`. Startup
+applies only the ordered upgrades newer than the stored version, in one
+transaction, then records the current version. Databases created before
+versioning report version 0 and are upgraded without duplicating existing
+columns. The app refuses to start against a database with a newer schema version
+than it supports, leaving that database unchanged.
+
 ## Run
 
 Install the .NET 10 SDK. On the first run, supply an initial username and strong
@@ -260,7 +272,8 @@ Integration tests use isolated temporary SQLite databases. Coverage includes
 CRUD, validation, persistence across host restarts, serving browser assets,
 OpenAPI operations, recurring task dates and month-end clamping, duplicate and
 concurrent completion, transaction rollback when successor creation fails, and
-upgrading a legacy database.
+versioned schema upgrades from fresh, legacy, partially upgraded, and versioned
+databases with data retained.
 
 Collect .NET code coverage in Cobertura format with:
 
@@ -330,7 +343,7 @@ Example requests: [TodoManager.http](src/TodoManager/TodoManager.http).
 Override the database location with the `TaskDatabase__Path` environment variable
 (use an absolute path outside the public web root). Keep the database on local
 disk and use SQLite-aware backups while the app runs, or stop the app before
-copying its database files. Schema creation and the recurrence migration are
+copying its database files. Schema creation and versioned schema upgrades are
 automatic. This is a single-server app, not a multi-instance service.
 
 For setup, project structure, configuration, recurrence behavior, and a detailed

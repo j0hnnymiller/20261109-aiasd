@@ -24,6 +24,11 @@ revisions:
     date: "2026-11-11"
     change: "Document flag configuration, dependency injection, runtime JSON reload, and testing."
     ai_log: "ai-logs/2026/11/11/implement-feature-flags-appsettings-20261111/conversation.md"
+  - chat_id: "version-task-schema-upgrades-20261112"
+    model: "Anthropic/claude@unknown"
+    date: "2026-11-12"
+    change: "Document versioned task-schema upgrades and how to add one (GitHub issue #10)."
+    ai_log: "ai-logs/2026/11/12/version-task-schema-upgrades-20261112/conversation.md"
 ---
 
 # Daybook Developer Guide
@@ -98,6 +103,7 @@ classDiagram
     class TaskService
     class TimeProvider
     class TaskDatabase {
+        +int CurrentSchemaVersion$
         +OpenConnection() SqliteConnection
         +InitializeAsync() Task
     }
@@ -179,7 +185,13 @@ By default, the SQLite database is stored at
 Use an absolute path outside the public web root.
 
 The schema is initialized automatically when the app starts. Existing databases
-are upgraded in place, retaining task data. The application uses SQLite and is
+are upgraded in place, retaining task data. `TaskDatabase` stores the schema
+version in `PRAGMA user_version` and applies its ordered `Upgrades` newer than
+that version in one transaction. To change the schema, append an upgrade with
+the next version and increment `CurrentSchemaVersion`; never edit or reorder
+shipped upgrades. Unversioned databases report version 0, so upgrades must
+tolerate changes that pre-versioning code already applied. Startup fails, without
+modifying data, when the stored version is newer than `CurrentSchemaVersion`. The application uses SQLite and is
 designed for a single server; it does not provide multi-instance storage or
 real-time browser synchronization. Authenticated users share all tasks.
 

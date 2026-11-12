@@ -26,6 +26,9 @@ browser-based interface.
 - Database schema creation and upgrades run automatically at startup. Existing
   databases are migrated to support recurrence and successor tracking, with
   existing tasks defaulting to no recurrence.
+- The task schema is versioned with SQLite `PRAGMA user_version`; ordered
+  upgrades run once and are not reapplied on restart. A database with a newer
+  schema version than the app supports is rejected at startup and not modified.
 - Task creation timestamps are stored as UTC. Due dates are calendar dates,
   not timezone-dependent timestamps.
 
