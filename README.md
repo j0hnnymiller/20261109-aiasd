@@ -75,6 +75,11 @@ revisions:
     date: "2026-11-12"
     change: "Link the local issue index for refactoring and instruction-audit findings."
     ai_log: "ai-logs/2026/11/12/refactoring-finding-issues-20261112/conversation.md"
+  - chat_id: "version-task-schema-20261112"
+    model: "OpenAI/unknown@unknown"
+    date: "2026-11-12"
+    change: "Document ordered task schema migrations, legacy adoption, rollback, and database regression tests."
+    ai_log: "ai-logs/2026/11/12/version-task-schema-20261112/conversation.md"
 ---
 
 # Daybook
@@ -199,9 +204,32 @@ Each occurrence generates at most one successor, even if completion is retried
 or the task is reopened and completed again. Deleting a task does not delete its
 successor. To stop repeating, set the active occurrence's Repeat field to
 **Does not repeat**. No tasks are generated in the background.
-Existing databases are automatically upgraded on startup to add recurrence and
-successor-tracking fields; existing task data is retained and old tasks default
-to no recurrence.
+Existing databases are automatically upgraded on startup; existing task data is
+retained and old tasks default to no recurrence.
+
+### Task schema upgrades
+
+[TaskDatabase](src/TodoManager/TaskDatabase.cs) stores the task schema version in
+SQLite's `PRAGMA user_version`, separately from Identity's EF Core migrations.
+Startup applies only pending migrations in this order:
+
+| Version | Change |
+|---|---|
+| 1 | Create the original task table |
+| 2 | Add `Recurrence`, defaulting to `None` |
+| 3 (current) | Add `HasGeneratedNext`, defaulting to `0` |
+
+Version `0` identifies fresh databases and databases from unversioned releases.
+On their first upgrade only, startup checks for existing recurrence and
+successor-tracking columns and skips additions already present. Both partially
+upgraded and fully populated unversioned schemas retain their existing values.
+
+All pending schema changes and version updates commit in one transaction. If an
+upgrade fails, none of those changes persist, and startup fails explicitly.
+Repeated initialization does not reapply completed migrations. Versions outside
+`0` through `3` are rejected rather than downgraded or silently accepted. Back up
+the task database before deploying schema changes; automatic downgrade is not
+supported. Future changes must append migrations without editing completed ones.
 
 ## Run
 
@@ -260,7 +288,11 @@ Integration tests use isolated temporary SQLite databases. Coverage includes
 CRUD, validation, persistence across host restarts, serving browser assets,
 OpenAPI operations, recurring task dates and month-end clamping, duplicate and
 concurrent completion, transaction rollback when successor creation fails, and
-upgrading a legacy database.
+upgrading a legacy database. Dedicated
+[task database tests](tests/TodoManager.Tests/TaskDatabaseTests.cs) cover fresh
+databases, every supported version and unversioned column combination, retained
+task fields and IDs, repeated initialization, column constraints, unsupported
+versions, and transactional rollback/retry.
 
 Collect .NET code coverage in Cobertura format with:
 
