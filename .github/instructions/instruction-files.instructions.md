@@ -60,8 +60,6 @@ Instruction files (`.instructions.md`) define rules, workflows, and best practic
 **Related Documentation**:
 
 - [AI-Assisted Output Instructions](ai-assisted-output.instructions.md) - Canonical post-creation requirements
-- [GitHub CLI Instructions](github-cli.instructions.md) - Example instruction file
-- [Business Rules to Vertical Slices](business-rules-to-slices.instructions.md) - Example instruction file
 
 ## Table of Contents
 
@@ -117,11 +115,12 @@ Instruction files (`.instructions.md`) define rules, workflows, and best practic
 .github/instructions/
 ├── instruction-files.instructions.md
 ├── ai-assisted-output.instructions.md
-├── business-rules-to-slices.instructions.md
-├── cqrs-architecture.instructions.md
-├── dependency-management-policy.instructions.md
-├── github-cli.instructions.md
-└── vertical-slice.instructions.md
+├── csharp.instructions.md
+├── csharp-development.instructions.md
+├── custom-agents.instructions.md
+├── github-issues.instructions.md
+├── skill-authoring.instructions.md
+└── test-driven-development.instructions.md
 ```
 
 **File naming pattern**:
@@ -355,9 +354,9 @@ Define:
 - **Audience**: AI agents, developers, both?
 - **Related Files**: What existing docs are related?
 
-### Step 2: Use the Authoring Skill
+### Step 2: Choose an Authoring Approach
 
-Use the [instruction-file authoring skill](../skills/create-instruction-file-authoring-instructions/SKILL.md) when its workflow fits. It helps reconcile requirements with existing guidance; manual authoring or adapting a verified, relevant instruction file is also appropriate. Do not create or revive prompt generators.
+Manual authoring or adapting a verified, relevant instruction file is appropriate. Do not create or revive prompt generators.
 
 ### Step 3: Execute in Copilot
 
@@ -560,7 +559,7 @@ After creating any instruction file, complete these steps:
 4. **Verify Metadata**: Ensure all 11 required AI provenance fields are present and correct
 5. **Test Links**: Verify all internal links function correctly
 
-See [AI-Assisted Output Instructions - Post-Creation Requirements](ai-assisted-output.instructions.md#post-creation-requirements-canonical) for complete procedures.
+See [Required post-creation steps](ai-assisted-output.instructions.md#required-post-creation-steps) for complete procedures.
 
 ## Validation Checklist
 
@@ -741,5 +740,3 @@ Update instruction files when:
 **Related Instructions**:
 
 - [AI-Assisted Output Instructions](ai-assisted-output.instructions.md)
-- [Business Rules to Vertical Slices](business-rules-to-slices.instructions.md)
-- [GitHub CLI Instructions](github-cli.instructions.md)
