@@ -321,6 +321,20 @@ public sealed class TaskApiTests : IDisposable
     }
 
     [Fact]
+    public async Task FreshDatabaseIsInitializedAtCurrentSchemaVersion()
+    {
+        using var app = CreateApp();
+        using var client = app.CreateClient();
+        Assert.Empty((await client.GetFromJsonAsync<JsonElement[]>("/api/tasks"))!);
+
+        await using var connection = new SqliteConnection($"Data Source={DatabasePath}");
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = "PRAGMA user_version";
+        Assert.Equal(2L, (long)(await command.ExecuteScalarAsync())!);
+    }
+
+    [Fact]
     public async Task LegacyDatabaseIsUpgradedWithoutLosingRecords()
     {
         Directory.CreateDirectory(directory);
@@ -351,6 +365,83 @@ public sealed class TaskApiTests : IDisposable
             Assert.Equal("2026-11-25", original.GetProperty("dueDate").GetString());
             Assert.Equal("None", original.GetProperty("recurrence").GetString());
         }
+        await using var upgradedConnection = new SqliteConnection($"Data Source={DatabasePath}");
+        await upgradedConnection.OpenAsync();
+        await using var versionCommand = upgradedConnection.CreateCommand();
+        versionCommand.CommandText = "PRAGMA user_version";
+        Assert.Equal(2L, (long)(await versionCommand.ExecuteScalarAsync())!);
+    }
+
+    [Fact]
+    public async Task PreviouslyCurrentUnversionedDatabaseIsMarkedAtCurrentSchemaVersion()
+    {
+        Directory.CreateDirectory(directory);
+        await using (var connection = new SqliteConnection($"Data Source={DatabasePath}"))
+        {
+            await connection.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText = """
+                CREATE TABLE Tasks (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT, Title TEXT NOT NULL,
+                    Notes TEXT NOT NULL, Priority TEXT NOT NULL, DueDate TEXT,
+                    IsCompleted INTEGER NOT NULL, CreatedAt TEXT NOT NULL,
+                    Recurrence TEXT NOT NULL DEFAULT 'None',
+                    HasGeneratedNext INTEGER NOT NULL DEFAULT 0);
+                INSERT INTO Tasks VALUES (
+                    1, 'Existing task', 'Original notes', 'Medium', '2026-11-25', 0,
+                    '2026-11-09T19:28:28+00:00', 'Weekly', 1);
+                """;
+            await command.ExecuteNonQueryAsync();
+        }
+
+        using var app = CreateApp();
+        using var client = app.CreateClient();
+        var task = Assert.Single((await client.GetFromJsonAsync<JsonElement[]>("/api/tasks"))!);
+        Assert.Equal("Existing task", task.GetProperty("title").GetString());
+        Assert.Equal("Weekly", task.GetProperty("recurrence").GetString());
+
+        await using var upgradedConnection = new SqliteConnection($"Data Source={DatabasePath}");
+        await upgradedConnection.OpenAsync();
+        await using var versionCommand = upgradedConnection.CreateCommand();
+        versionCommand.CommandText = "PRAGMA user_version";
+        Assert.Equal(2L, (long)(await versionCommand.ExecuteScalarAsync())!);
+    }
+
+    [Fact]
+    public async Task VersionOneDatabaseIsUpgradedToCurrentSchema()
+    {
+        Directory.CreateDirectory(directory);
+        await using (var connection = new SqliteConnection($"Data Source={DatabasePath}"))
+        {
+            await connection.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText = """
+                CREATE TABLE Tasks (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT, Title TEXT NOT NULL,
+                    Notes TEXT NOT NULL, Priority TEXT NOT NULL, DueDate TEXT,
+                    IsCompleted INTEGER NOT NULL, CreatedAt TEXT NOT NULL,
+                    Recurrence TEXT NOT NULL DEFAULT 'None');
+                INSERT INTO Tasks VALUES (
+                    1, 'Version one task', 'Original notes', 'Medium', '2026-11-25', 0,
+                    '2026-11-09T19:28:28+00:00', 'Daily');
+                PRAGMA user_version = 1;
+                """;
+            await command.ExecuteNonQueryAsync();
+        }
+
+        using var app = CreateApp();
+        using var client = app.CreateClient();
+        var task = Assert.Single((await client.GetFromJsonAsync<JsonElement[]>("/api/tasks"))!);
+        Assert.Equal("Version one task", task.GetProperty("title").GetString());
+        Assert.Equal("Daily", task.GetProperty("recurrence").GetString());
+
+        await using var upgradedConnection = new SqliteConnection($"Data Source={DatabasePath}");
+        await upgradedConnection.OpenAsync();
+        await using var versionCommand = upgradedConnection.CreateCommand();
+        versionCommand.CommandText = "PRAGMA user_version";
+        Assert.Equal(2L, (long)(await versionCommand.ExecuteScalarAsync())!);
+        versionCommand.CommandText = "SELECT HasGeneratedNext FROM Tasks WHERE Id = 1";
+        Assert.Equal(0L, (long)(await versionCommand.ExecuteScalarAsync())!);
     }
 
     [Theory]

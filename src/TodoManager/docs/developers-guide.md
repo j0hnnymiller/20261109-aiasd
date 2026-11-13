@@ -179,9 +179,10 @@ By default, the SQLite database is stored at
 Use an absolute path outside the public web root.
 
 The schema is initialized automatically when the app starts. Existing databases
-are upgraded in place, retaining task data. The application uses SQLite and is
-designed for a single server; it does not provide multi-instance storage or
-real-time browser synchronization. Authenticated users share all tasks.
+are upgraded in place in version order, retaining task data. The current schema
+version is stored in SQLite's `user_version` pragma. The application uses SQLite
+and is designed for a single server; it does not provide multi-instance storage
+or real-time browser synchronization. Authenticated users share all tasks.
 
 ### Feature flags
 
