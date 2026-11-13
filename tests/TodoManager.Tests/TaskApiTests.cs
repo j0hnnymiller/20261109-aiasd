@@ -405,6 +405,8 @@ public sealed class TaskApiTests : IDisposable
         await using var versionCommand = upgradedConnection.CreateCommand();
         versionCommand.CommandText = "PRAGMA user_version";
         Assert.Equal(2L, (long)(await versionCommand.ExecuteScalarAsync())!);
+        versionCommand.CommandText = "SELECT HasGeneratedNext FROM Tasks WHERE Id = 1";
+        Assert.Equal(1L, (long)(await versionCommand.ExecuteScalarAsync())!);
     }
 
     [Fact]
